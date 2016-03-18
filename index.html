@@ -14,8 +14,15 @@
 
                     <form name="myform" onSubmit="return handleFormSubmission()">
                         <input name="Submit"  type="submit" value="Submit" >
-                        <input type="text" id="seq_1" placeholder="Add some text&hellip;">
-                        <input type="text" id="seq_2" placeholder="Add some text&hellip;">
+                        <!--<input type="text" id="seq_1" placeholder="Add some
+                            text&hellip;"> -->
+                        <!--<input type="text" id="seq_2" placeholder="Add some
+                            text&hellip;"> -->
+                        <input type="text" id="seq_1" placeholder="Sequence 1">
+                        <input type="text" id="seq_2" placeholder="Sequence 2">
+                        <input type="text" id="match" placeholder="Match Score">
+                        <input type="text" id="misMatch" placeholder="Mismatch Score">
+                        <input type="text" id="gap" placeholder="Gap Score">
                     </form>
 
                 </div> 
@@ -30,11 +37,18 @@
                         //draw(document.getElementById("myVal").value)
                         var seq_1 = document.getElementById("seq_1").value;
                         var seq_2 = document.getElementById("seq_2").value;
-                        draw(seq_1, seq_2); 
+                        var match =
+                            parseFloat(document.getElementById("match").value);
+                        var misMatch =
+                            parseFloat(document.getElementById("misMatch").value);
+                        var gap =
+                            parseFloat(document.getElementById("gap").value);
+
+                        draw(seq_1, seq_2, match, misMatch, gap); 
                         return false;
                     }
                         
-                    function draw(seq_1, seq_2) {
+                    function draw(seq_1, seq_2, match, misMatch, gap) {
                         // Remove previous visuals
 
                         d3.select("svg").remove();
@@ -63,7 +77,6 @@
                         var colorActive = "lightblue";
                         
                         // Local alignment algorithm:
-
                         //scoring function
                         var score = function(x, y, match, misMatch) {
                             if(x == y) {
@@ -119,40 +132,25 @@
                             return [score_mat, trace_mat]; 
                         }
 
-                        var res = popMat(sequence_1, sequence_2,3,-2,-1);
+                        //==============================================
+
+                        // Draw the matrix
+
+                        var res = popMat(sequence_1, sequence_2, match, misMatch,
+                                gap);
                         var score_mat = res[0];
                         var trace_mat = res[1];
                         
                         var data = new Array();
 
-                        //for(i = 0; i < nrow; i++) { //>
-                        //    if(i == 0) {
-                        //        var data = score_mat[i];
-                        //    } else {
-                        //        data = data.concat(score_mat[i]);
-                        //    }
-                        //}
-
                         for(i = 0; i < nrow; i++) { //>
                             for(j = 0; j < ncol; j++) { //>
                                 var doc = {"score": score_mat[i][j],
-                                           "trace": trace_mat[i][j]}
+                                           "trace": trace_mat[i][j],
+                                           "active": false}
                                 data.push(doc)
                             }
                         }
-
-                        //Create SVG matrix element
-                        var svg = d3.select("body")
-                                    .append("svg")
-                                    .attr("width", w)
-                                    .attr("height", h);
-
-                        var rects = svg.selectAll("rect")
-                            .data(data)
-                            .enter()
-                            .append("g")
-                            .append("rect");
-
                         var get_coord = function(i, coord) {
                             // Get the x / y coordinates from the cell number
                             col = i % ncol;
@@ -166,46 +164,108 @@
                                     top_margin; }
 
                             return returnValue;
-
                         } 
-                            
-                        
-                        rects.attr("x", function(d, i) {return get_coord(i, "x");})
-                            .attr("y", function(d, i) {return get_coord(i, "y");})
-                            .attr("width", (cell_width - col_padding))
-                            .attr("height", (cell_height - row_padding))
-                            .style("fill", colorInactive)
-                            .style("stroke", "black")
-                            .attr("active", false)
-                            .style({opacity: '1'})
-                            .on('click', function(d){
-                                
-                                var nextColor = this.style.fill == colorInactive ?
-                                    colorActive : colorInactive
-                                
-                                var nodeSelection = d3.select(this)
-                                                      .style("fill", nextColor)
-                                var text_x = Number(nodeSelection.attr("x")) + 
-                                        0.5 * cell_width;
-                                var text_y = Number(nodeSelection.attr("y")) + 
-                                        0.5 * cell_height;                                
 
-                                if(nextColor == colorInactive) {
-                                    d3.select(this.parentNode).select("text").remove()
-                                } else {
-                                    var d = d3.select(this.parentNode).datum();
-                                    var score = d["score"];
-                                    var trace = d["trace"];
-                                    
-                                    parentNode = d3.select(this.parentNode)
-                                    .append("text")
-                                    .text(score)
-                                    .attr("x", text_x)
-                                    .attr("y", text_y)
-                                    .style("text-anchor", "middle")
-                                }
-                                
+                        //Create SVG matrix element
+                        var svg = d3.select("body")
+                                    .append("svg")
+                                    .attr("width", w)
+                                    .attr("height", h);
+
+                        //Insert a rectangle for each cell and append data
+                        var rects = svg.selectAll("rect")
+                                       .data(data)
+                                       .enter()
+                                       .append("g")
+                                       .append("rect");
+                        
+                        //Draw rectangles
+                        rects.attr("x", function(d, i) {return get_coord(i, "x");})
+                             .attr("y", function(d, i) {return get_coord(i, "y");})
+                             .attr("width", (cell_width - col_padding))
+                             .attr("height", (cell_height - row_padding))
+                             .style("fill", colorInactive)
+                             .style("stroke", "black")
+                             .attr("active", false)
+                             .style({opacity: '1'})
+                             .on('click', function(d){
+                                 
+                                 var nextColor = this.style.fill == colorInactive ?
+                                     colorActive : colorInactive
+                                 
+                                 var nodeSelection = d3.select(this)
+                                                       .style("fill", nextColor)
+                                 var text_x = Number(nodeSelection.attr("x")) + 
+                                         0.5 * cell_width;
+                                 var text_y = Number(nodeSelection.attr("y")) + 
+                                         0.5 * cell_height;                                
+
+                                 if(nextColor == colorInactive) {
+                                     d3.select(this.parentNode).select("text").remove()
+                                 } else {
+                                     var d = d3.select(this.parentNode).datum();
+                                     var score = d["score"];
+                                     var trace = d["trace"];
+                                     
+                                     parentNode = d3.select(this.parentNode)
+                                     .append("text")
+                                     .text(score)
+                                     .attr("x", text_x)
+                                     .attr("y", text_y)
+                                     .style("text-anchor", "middle")
+                                 }
+                                 
+                             })
+                            .on('mouseover', function(d) {
+                                d3.select(this).style("stroke", "orange") 
+                            })
+                            .on('mouseout', function(d) {
+                                d3.select(this).style("stroke", "black")
                             });
+
+                        // Draw the column and row names
+                         
+
+                        var row_names = svg.selectAll("text.row")
+                                           .data(sequence_1)
+                                           .enter()
+                                           .append("text");
+                         
+                        row_names.text(function(d) {return d;})
+                                 .attr("y", function(d, i) { 
+                                     var out = top_margin + i * cell_height +
+                                         row_padding + 0.5 * cell_height;
+                                     return out; 
+                                 })
+                                 .attr("x", 0.5 * left_margin);
+
+
+                        var col_names = svg.selectAll("text.col")
+                                           .data(sequence_2)
+                                           .enter()
+                                           .append("text");
+                         
+                        col_names.text(function(d) {return d;})
+                                 .attr("x", function(d, i) { 
+                                     var out = left_margin + i * cell_width +
+                                         col_padding + 0.5 * cell_width;
+                                     return out; 
+                                 })
+                                 .attr("y", 0.5 * top_margin);
+
+
+
+                        //row_names.attr("x", function(d, i) {
+                        //            return top_margin + i * cell_height +
+                        //                row_padding;
+                        //         })
+                        //         .attr("y", 0)
+                        //         .attr("fill", "black")
+                        //         .attr("width", (left_margin - col_padding))
+                        //         .attr("height", (cell_height - row_padding));
+
+
+                        //// Display the alignment
                         }
 			
 
