@@ -2,28 +2,38 @@
 <html lang="en">
     <head>
         <meta charset="utf-8">
-        <title>D3 Demo: SVG with data</title>
+        <title>Local Alignment Visual</title>
         <script type="text/javascript" src="d3/d3.min.js"></script>
         <style type="text/css">
-                /* No style rules here yet */		
         </style>
     </head>
 
     <body>
         <div>
-
-            <form name="myform" onSubmit="return handleFormSubmission()">
+            <form name="parameters" onSubmit="return handleFormSubmission()">
+                <p>
+                Sequence 1 (Rows): <input type="text" id="seq_1" 
+                    placeholder="Sequence 1" value="a b c d e x x h i j k l m n">
+                </p>
+                <p>
+                Sequence 2 (Columns): <input type="text" id="seq_2" 
+                    placeholder="Sequence 2" value="a b c x d f g h i j k l m n">
+                </p>
+                <p>
+                Match Score: <input type="text" id="match" 
+                    placeholder="Match Score" value="3">
+                </p>
+                <p>
+                Mismatch Score: <input type="text" id="misMatch" 
+                    placeholder="Mismatch Score" value="-2">
+                </p>
+                <p>
+                Gap Score <input type="text" id="gap" placeholder="Gap Score" 
+                    value="-1">
+                </p>
+                <p>
                 <input name="Submit"  type="submit" value="Submit" >
-                <input type="text" id="seq_1" placeholder="Sequence 1"
-                value="a b c d e f g h i j">
-                <input type="text" id="seq_2" placeholder="Sequence 2"
-                value="a b c x d f g h i j">
-                <input type="text" id="match" placeholder="Match Score"
-                value="3">
-                <input type="text" id="misMatch" placeholder="Mismatch
-                Score" value="-2">
-                <input type="text" id="gap" placeholder="Gap Score"
-                value="-1">
+                </p>
             </form>
 
         </div> 
@@ -48,6 +58,8 @@
                 draw(seq_1, seq_2, match, misMatch, gap); 
                 return false;
             }
+            var rowAlignment = [];
+            var colAlignment = []; 
                 
             function draw(seq_1, seq_2, match, misMatch, gap) {
                 // Remove previous visuals
@@ -62,7 +74,7 @@
                 var ncol = sequence_2.length;
 
                 //Width and height
-                var size = 600;
+                var size = 400;
                 if(nrow == ncol) { 
                     var w = size;
                     var h = size;
@@ -88,7 +100,8 @@
                 var colorActive = "lightblue";
 
                 var fontSize = 0.3 * cell_width
-                
+
+               
                 // Local alignment algorithm:
                 //scoring function
                 var score = function(x, y, match, misMatch) {
@@ -155,13 +168,15 @@
                 var trace_mat = res[1];
                 
                 var data = new Array();
-
+                var c = 0;
                 for(i = 0; i < nrow; i++) { //>
                     for(j = 0; j < ncol; j++) { //>
                         var doc = {"score": score_mat[i][j],
                                    "trace": trace_mat[i][j],
-                                   "active": false}
+                                   "active": false,
+                                   "counter": c}
                         data.push(doc)
+                        c = c + 1;
 
                     }
                 }
@@ -194,24 +209,24 @@
                    .append("line")
                    .attr("x1", function(d, i){ 
                        if(d['trace'] == 1) {
-                           return get_coord(i, "x") + 0.5 * cell_width;
+                           return get_coord(i, "x") + 0.4 * cell_width;
                        } else {
                            return get_coord(i, "x");
                        }
                    })
                    .attr("y1", function(d, i){ 
                        if(d['trace'] == 2) {
-                           return get_coord(i, "y") + 0.5 * cell_width;
+                           return get_coord(i, "y") + 0.4 * cell_width;
                        } else {
                            return get_coord(i, "y");
                        }
                    })
                    .attr("x2", function(d, i){ 
-                       var out = get_coord(i, "x") + 0.5 * cell_width; 
+                       var out = get_coord(i, "x") + 0.4 * cell_width; 
                        return out;
                    })
                    .attr("y2", function(d, i){
-                       out = get_coord(i, "y") + 0.5 * cell_height;
+                       out = get_coord(i, "y") + 0.4 * cell_height;
                        return out;
                    })
                    .attr("stroke-width", 1)
@@ -265,7 +280,52 @@
                    .on('mouseout', function(d) {
                        d3.select(this).style("stroke", "white")
                                       .style("stroke-width", 1)
+                   })
+                   .on('click', function(d, i) {
+
+                      d3.select("#rowAlignment").remove();
+                      d3.select("#colAlignment").remove();
+                      d = d3.select(this.parentNode).datum()
+                      if(d['active'] == false){
+                          d3.select(this).style("opacity", 0.8);
+                          d['active'] = true;
+                          d3.select(this.parentNode).__data__ = d;
+                          rowElement = Math.floor((d['counter'] / ncol));
+                          colElement = d['counter'] % ncol;
+                          if(rowElement == colElement) {
+                              rowAlignment.push(sequence_1[rowElement]);
+                              colAlignment.push(sequence_2[colElement]);
+                          }
+                          //var rowElement = function(d, i) { 
+                          //    return Math.floor((i / ncol)); 
+                          //}
+                          //var colElement = function(d, i) {
+                          //    return i % ncol;
+                          //}
+                          //alert(rowElement);
+                          //alert(colElement);
+                          
+                      } else {
+                          d3.select(this).style("opacity", 0.5);
+                          d['active'] = false;
+                          d3.select(this.parentNode).__data__ = d;
+                      }
+                        //// Display the alignment
+                        //Row alignment
+                        d3.select("body")
+                          .append("p")
+                          .attr("id", "rowAlignment")
+                          .text(rowAlignment.join(" "));
+                        //Column alignment
+                        d3.select("body")
+                          .append("p")
+                          .attr("id", "colAlignment")
+                          .text(colAlignment.join(" "));
+         
+                      
                    });
+
+
 
 
                 // Draw the column and row names
@@ -295,50 +355,10 @@
                          })
                          .attr("y", 0.5 * top_margin);
 
-
-
                 
-                //// Display the alignment
-                 
-    
-                }
-
-        //.on('click', function(d){
-        //                 
-        //                 var nextColor = this.style.fill == colorInactive ?
-        //                     colorActive : colorInactive
-        //                 
-        //                 var nodeSelection = d3.select(this)
-        //                                       .style("fill", nextColor)
-        //                 var text_x = Number(nodeSelection.attr("x")) + 
-        //                         0.5 * cell_width;
-        //                 var text_y = Number(nodeSelection.attr("y")) + 
-        //                         0.5 * cell_height;                                
-
-        //                 if(nextColor == colorInactive) {
-        //                     d3.select(this.parentNode).select("text").remove()
-        //                     var d = d3.select(this.parentNode).datum();
-        //                     d["active"] = false;
-        //                     d3.select(this.parentNode).__data__ = d;
-
-        //                 } else {
-        //                     var d = d3.select(this.parentNode).datum();
-        //                     d["active"] = true;
-        //                     d3.select(this.parentNode).__data__ = d;
-        //                     
-        //                     var score = d["score"];
-        //                     var trace = d["trace"];
-        //                     
-        //                     parentNode = d3.select(this.parentNode)
-        //                     .append("text")
-        //                     .text(score)
-        //                     .attr("x", text_x)
-        //                     .attr("y", text_y)
-        //                     .style("text-anchor", "middle")
-        //                 }
-        //                 
-        //             })	
-
+            }
+                
+                    
         </script>
     </body>
 </html>
