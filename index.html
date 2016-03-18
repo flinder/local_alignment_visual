@@ -57,23 +57,33 @@
                         var sequence_1 = seq_1.split(" ");
                         var sequence_2 = seq_2.split(" "); 
 
-                        //Width and height
-                        var w = 600;
-                        var h = 600;
-                        
                         var nrow = sequence_1.length;
                         var ncol = sequence_2.length;
+
+                        //Width and height
+                        var size = 600;
+                        if(nrow == ncol) { 
+                            var w = size;
+                            var h = size;
+                        } else if(nrow > ncol) {
+                            var h = size;
+                            var w = size * ncol / nrow;
+                        } else if(nrow < ncol) {
+                            var w = size;
+                            var h = size * nrow / ncol;
+                        }
+                        
 
                         var padding = 0.05;
                         var left_margin = 0.1 * w;
                         var top_margin = 0.1 * h;
 
                         var ncell = nrow * ncol;
-                        var row_padding = padding * 500 / nrow;
-                        var col_padding = padding * 500 / ncol; 
+                        var row_padding = padding * h / nrow;
+                        var col_padding = padding * w / ncol; 
                         var cell_width = (w - left_margin) / ncol;
                         var cell_height = (h - top_margin) / nrow;
-                        var colorInactive = "green";
+                        var colorInactive = "orange";
                         var colorActive = "lightblue";
                         
                         // Local alignment algorithm:
@@ -97,6 +107,7 @@
 
                         // Populate Matrix
                         var popMat = function(s_1, s_2, match, misMatch, gap) {
+
                             var l1 = s_1.length;
                             var l2 = s_2.length;
                             var score_mat = makeMatrix(l1, l2);
@@ -135,7 +146,6 @@
                         //==============================================
 
                         // Draw the matrix
-
                         var res = popMat(sequence_1, sequence_2, match, misMatch,
                                 gap);
                         var score_mat = res[0];
@@ -149,13 +159,14 @@
                                            "trace": trace_mat[i][j],
                                            "active": false}
                                 data.push(doc)
+
                             }
                         }
+                            
                         var get_coord = function(i, coord) {
                             // Get the x / y coordinates from the cell number
                             col = i % ncol;
-                            row = Math.floor(i / nrow); 
-                               
+                            row = Math.floor((i / ncol));  
                             if(coord == "x") {
                                 returnValue = col * cell_width + col_padding +
                                     left_margin;
@@ -185,7 +196,7 @@
                              .attr("width", (cell_width - col_padding))
                              .attr("height", (cell_height - row_padding))
                              .style("fill", colorInactive)
-                             .style("stroke", "black")
+                             .style("stroke", "white")
                              .attr("active", false)
                              .style({opacity: '1'})
                              .on('click', function(d){
@@ -202,8 +213,15 @@
 
                                  if(nextColor == colorInactive) {
                                      d3.select(this.parentNode).select("text").remove()
+                                     var d = d3.select(this.parentNode).datum();
+                                     d["active"] = false;
+                                     d3.select(this.parentNode).__data__ = d;
+
                                  } else {
                                      var d = d3.select(this.parentNode).datum();
+                                     d["active"] = true;
+                                     d3.select(this.parentNode).__data__ = d;
+                                     
                                      var score = d["score"];
                                      var trace = d["trace"];
                                      
@@ -217,10 +235,12 @@
                                  
                              })
                             .on('mouseover', function(d) {
-                                d3.select(this).style("stroke", "orange") 
+                                d3.select(this).style("stroke", "grey") 
+                                               .style("stroke-width", 2)
                             })
                             .on('mouseout', function(d) {
-                                d3.select(this).style("stroke", "black")
+                                d3.select(this).style("stroke", "white")
+                                               .style("stroke-width", 1)
                             });
 
                         // Draw the column and row names
@@ -253,19 +273,10 @@
                                  })
                                  .attr("y", 0.5 * top_margin);
 
-
-
-                        //row_names.attr("x", function(d, i) {
-                        //            return top_margin + i * cell_height +
-                        //                row_padding;
-                        //         })
-                        //         .attr("y", 0)
-                        //         .attr("fill", "black")
-                        //         .attr("width", (left_margin - col_padding))
-                        //         .attr("height", (cell_height - row_padding));
-
-
+                        
                         //// Display the alignment
+                         
+
                         }
 			
 
