@@ -1,286 +1,345 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8">
-		<title>D3 Demo: SVG with data</title>
-		<script type="text/javascript" src="d3/d3.min.js"></script>
-		<style type="text/css">
-			/* No style rules here yet */		
-		</style>
-	</head>
+    <head>
+        <meta charset="utf-8">
+        <title>D3 Demo: SVG with data</title>
+        <script type="text/javascript" src="d3/d3.min.js"></script>
+        <style type="text/css">
+                /* No style rules here yet */		
+        </style>
+    </head>
 
-        <body>
-                <div>
+    <body>
+        <div>
 
-                    <form name="myform" onSubmit="return handleFormSubmission()">
-                        <input name="Submit"  type="submit" value="Submit" >
-                        <!--<input type="text" id="seq_1" placeholder="Add some
-                            text&hellip;"> -->
-                        <!--<input type="text" id="seq_2" placeholder="Add some
-                            text&hellip;"> -->
-                        <input type="text" id="seq_1" placeholder="Sequence 1">
-                        <input type="text" id="seq_2" placeholder="Sequence 2">
-                        <input type="text" id="match" placeholder="Match Score">
-                        <input type="text" id="misMatch" placeholder="Mismatch Score">
-                        <input type="text" id="gap" placeholder="Gap Score">
-                    </form>
+            <form name="myform" onSubmit="return handleFormSubmission()">
+                <input name="Submit"  type="submit" value="Submit" >
+                <input type="text" id="seq_1" placeholder="Sequence 1"
+                value="a b c d e f g h i j">
+                <input type="text" id="seq_2" placeholder="Sequence 2"
+                value="a b c x d f g h i j">
+                <input type="text" id="match" placeholder="Match Score"
+                value="3">
+                <input type="text" id="misMatch" placeholder="Mismatch
+                Score" value="-2">
+                <input type="text" id="gap" placeholder="Gap Score"
+                value="-1">
+            </form>
 
-                </div> 
+        </div> 
 
-                <script type="text/javascript">
+        <script type="text/javascript">
 
-                    //Function to handle the form submission and 
-                    //redraw the matrix
-                        
-                    function handleFormSubmission(event){
-                        //console.log(document.getElementById("seq_q").value)
-                        //draw(document.getElementById("myVal").value)
-                        var seq_1 = document.getElementById("seq_1").value;
-                        var seq_2 = document.getElementById("seq_2").value;
-                        var match =
-                            parseFloat(document.getElementById("match").value);
-                        var misMatch =
-                            parseFloat(document.getElementById("misMatch").value);
-                        var gap =
-                            parseFloat(document.getElementById("gap").value);
+            //Function to handle the form submission and 
+            //redraw the matrix
+                
+            function handleFormSubmission(event){
+                //console.log(document.getElementById("seq_q").value)
+                //draw(document.getElementById("myVal").value)
+                var seq_1 = document.getElementById("seq_1").value;
+                var seq_2 = document.getElementById("seq_2").value;
+                var match =
+                    parseFloat(document.getElementById("match").value);
+                var misMatch =
+                    parseFloat(document.getElementById("misMatch").value);
+                var gap =
+                    parseFloat(document.getElementById("gap").value);
 
-                        draw(seq_1, seq_2, match, misMatch, gap); 
-                        return false;
-                    }
-                        
-                    function draw(seq_1, seq_2, match, misMatch, gap) {
-                        // Remove previous visuals
+                draw(seq_1, seq_2, match, misMatch, gap); 
+                return false;
+            }
+                
+            function draw(seq_1, seq_2, match, misMatch, gap) {
+                // Remove previous visuals
 
-                        d3.select("svg").remove();
+                d3.select("svg").remove();
 
-                        // Process input sequences
-                        var sequence_1 = seq_1.split(" ");
-                        var sequence_2 = seq_2.split(" "); 
+                // Process input sequences
+                var sequence_1 = seq_1.split(" ");
+                var sequence_2 = seq_2.split(" "); 
 
-                        var nrow = sequence_1.length;
-                        var ncol = sequence_2.length;
+                var nrow = sequence_1.length;
+                var ncol = sequence_2.length;
 
-                        //Width and height
-                        var size = 600;
-                        if(nrow == ncol) { 
-                            var w = size;
-                            var h = size;
-                        } else if(nrow > ncol) {
-                            var h = size;
-                            var w = size * ncol / nrow;
-                        } else if(nrow < ncol) {
-                            var w = size;
-                            var h = size * nrow / ncol;
-                        }
-                        
+                //Width and height
+                var size = 600;
+                if(nrow == ncol) { 
+                    var w = size;
+                    var h = size;
+                } else if(nrow > ncol) {
+                    var h = size;
+                    var w = size * ncol / nrow;
+                } else if(nrow < ncol) {
+                    var w = size;
+                    var h = size * nrow / ncol;
+                }
+                
 
-                        var padding = 0.05;
-                        var left_margin = 0.1 * w;
-                        var top_margin = 0.1 * h;
+                var padding = 0.05;
+                var left_margin = 0.1 * w;
+                var top_margin = 0.1 * h;
 
-                        var ncell = nrow * ncol;
-                        var row_padding = padding * h / nrow;
-                        var col_padding = padding * w / ncol; 
-                        var cell_width = (w - left_margin) / ncol;
-                        var cell_height = (h - top_margin) / nrow;
-                        var colorInactive = "orange";
-                        var colorActive = "lightblue";
-                        
-                        // Local alignment algorithm:
-                        //scoring function
-                        var score = function(x, y, match, misMatch) {
-                            if(x == y) {
-                                return match;
+                var ncell = nrow * ncol;
+                var row_padding = padding * h / nrow;
+                var col_padding = padding * w / ncol; 
+                var cell_width = (w - left_margin) / ncol;
+                var cell_height = (h - top_margin) / nrow;
+                var colorInactive = "orange";
+                var colorActive = "lightblue";
+
+                var fontSize = 0.3 * cell_width
+                
+                // Local alignment algorithm:
+                //scoring function
+                var score = function(x, y, match, misMatch) {
+                    if(x == y) {
+                        return match;
+                    } else {
+                        return misMatch;
+                    } 
+                }
+                
+                // Empty matrix
+                makeMatrix = function(rows, cols) {
+                    var arr = [], row = [];
+                        while (cols--) row.push(0);
+                        while (rows--) arr.push(row.slice());
+                        return arr;
+                }
+                
+
+                // Populate Matrix
+                var popMat = function(s_1, s_2, match, misMatch, gap) {
+
+                    var l1 = s_1.length;
+                    var l2 = s_2.length;
+                    var score_mat = makeMatrix(l1, l2);
+                    var trace_mat = makeMatrix(l1, l2);
+
+                    for(i = 0; i < l1; ++i) { //>
+
+                        for(j = 0; j < l2; ++j) { //>
+                             
+                            //diagonal
+                            if(i == 0 || j == 0) {
+                                var d_last = 0;
+                                var u_last = 0;
+                                var l_last = 0;
+
                             } else {
-                                return misMatch;
-                            } 
-                        }
-                        
-                        // Empty matrix
-                        makeMatrix = function(rows, cols) {
-                            var arr = [], row = [];
-                                while (cols--) row.push(0);
-                                while (rows--) arr.push(row.slice());
-                                return arr;
-                        }
-                        
-
-                        // Populate Matrix
-                        var popMat = function(s_1, s_2, match, misMatch, gap) {
-
-                            var l1 = s_1.length;
-                            var l2 = s_2.length;
-                            var score_mat = makeMatrix(l1, l2);
-                            var trace_mat = makeMatrix(l1, l2);
-
-                            for(i = 0; i < l1; ++i) { //>
-
-                                for(j = 0; j < l2; ++j) { //>
-                                     
-                                    //diagonal
-                                    if(i == 0 || j == 0) {
-                                        var d_last = 0;
-                                        var u_last = 0;
-                                        var l_last = 0;
-
-                                    } else {
-                                        var d_last = score_mat[i-1][j-1];
-                                        var u_last = score_mat[i-1][j];
-                                        var l_last = score_mat[i][j-1];
-                                    }
-                                    var d_new = d_last + score(s_1[i], s_2[j],
-                                            match, misMatch); 
-                                    var u_new = u_last + gap;
-                                    var l_new = l_last + gap;
-                                    score_mat[i][j] = Math.max(d_new, u_new, l_new, 0);
-                                    var arr = [d_new, u_new, l_new, 0];
-                                    var trace = arr.indexOf(Math.max.apply(Math, arr));
-                                    trace_mat[i][j] = trace;
-                                
-                                }
-
+                                var d_last = score_mat[i-1][j-1];
+                                var u_last = score_mat[i-1][j];
+                                var l_last = score_mat[i][j-1];
                             }
-                            return [score_mat, trace_mat]; 
+                            var d_new = d_last + score(s_1[i], s_2[j],
+                                    match, misMatch); 
+                            var u_new = u_last + gap;
+                            var l_new = l_last + gap;
+                            score_mat[i][j] = Math.max(d_new, u_new, l_new, 0);
+                            var arr = [d_new, u_new, l_new, 0];
+                            var trace = arr.indexOf(Math.max.apply(Math, arr));
+                            trace_mat[i][j] = trace;
+                        
                         }
 
-                        //==============================================
+                    }
+                    return [score_mat, trace_mat]; 
+                }
 
-                        // Draw the matrix
-                        var res = popMat(sequence_1, sequence_2, match, misMatch,
-                                gap);
-                        var score_mat = res[0];
-                        var trace_mat = res[1];
+                //==============================================
+
+                // Draw the matrix
+                var res = popMat(sequence_1, sequence_2, match, misMatch,
+                        gap);
+                var score_mat = res[0];
+                var trace_mat = res[1];
+                
+                var data = new Array();
+
+                for(i = 0; i < nrow; i++) { //>
+                    for(j = 0; j < ncol; j++) { //>
+                        var doc = {"score": score_mat[i][j],
+                                   "trace": trace_mat[i][j],
+                                   "active": false}
+                        data.push(doc)
+
+                    }
+                }
+                    
+                var get_coord = function(i, coord) {
+                    // Get the x / y coordinates from the cell number
+                    col = i % ncol;
+                    row = Math.floor((i / ncol));  
+                    if(coord == "x") {
+                        returnValue = col * cell_width + col_padding + 
+                            left_margin;
+                    } else if(coord == "y") { 
+                        returnValue = row * cell_height + row_padding +
+                            top_margin; }
+
+                    return returnValue;
+                } 
+
+                //Create SVG matrix element
+                var svg = d3.select("body")
+                            .append("svg")
+                            .attr("width", w)
+                            .attr("height", h);
+
+                //Draw trace arrows
+                svg.selectAll("g")
+                   .data(data)
+                   .enter()
+                   .append("g")
+                   .append("line")
+                   .attr("x1", function(d, i){ 
+                       if(d['trace'] == 1) {
+                           return get_coord(i, "x") + 0.5 * cell_width;
+                       } else {
+                           return get_coord(i, "x");
+                       }
+                   })
+                   .attr("y1", function(d, i){ 
+                       if(d['trace'] == 2) {
+                           return get_coord(i, "y") + 0.5 * cell_width;
+                       } else {
+                           return get_coord(i, "y");
+                       }
+                   })
+                   .attr("x2", function(d, i){ 
+                       var out = get_coord(i, "x") + 0.5 * cell_width; 
+                       return out;
+                   })
+                   .attr("y2", function(d, i){
+                       out = get_coord(i, "y") + 0.5 * cell_height;
+                       return out;
+                   })
+                   .attr("stroke-width", 1)
+                   .attr("stroke", function(d, i){
+                       if(d['trace'] == 3) {
+                           return "none"; 
+                       } else {
+                           return "grey";
+                       }
                         
-                        var data = new Array();
+                   });
+ 
 
-                        for(i = 0; i < nrow; i++) { //>
-                            for(j = 0; j < ncol; j++) { //>
-                                var doc = {"score": score_mat[i][j],
-                                           "trace": trace_mat[i][j],
-                                           "active": false}
-                                data.push(doc)
+                //Draw the scores
+                svg.selectAll("g")
+                    .append("text")
+                    .text(function(d, i) {return d["score"];})
+                    .attr("x", function(d, i) {
+                        var out = get_coord(i, "x") + 0.5 * 
+                            cell_width - 0.1 * fontSize;
+                        return out;
+                    })
+                    .attr("y", function(d, i) {
+                        var out = get_coord(i, "y") + 0.5 *
+                            cell_height + 0.2 * fontSize;
+                        return out;
+                    })
+                    .style("text-anchor", "middle")
+                    .style("font-size", fontSize)
+                    .attr("font-family", "Arial")
+                    .style("fill", "grey");
 
-                            }
-                        }
-                            
-                        var get_coord = function(i, coord) {
-                            // Get the x / y coordinates from the cell number
-                            col = i % ncol;
-                            row = Math.floor((i / ncol));  
-                            if(coord == "x") {
-                                returnValue = col * cell_width + col_padding +
-                                    left_margin;
-                            } else if(coord == "y") { 
-                                returnValue = row * cell_height + row_padding +
-                                    top_margin; }
-
-                            return returnValue;
-                        } 
-
-                        //Create SVG matrix element
-                        var svg = d3.select("body")
-                                    .append("svg")
-                                    .attr("width", w)
-                                    .attr("height", h);
-
-                        //Insert a rectangle for each cell and append data
-                        var rects = svg.selectAll("rect")
-                                       .data(data)
-                                       .enter()
-                                       .append("g")
-                                       .append("rect");
-                        
-                        //Draw rectangles
-                        rects.attr("x", function(d, i) {return get_coord(i, "x");})
-                             .attr("y", function(d, i) {return get_coord(i, "y");})
-                             .attr("width", (cell_width - col_padding))
-                             .attr("height", (cell_height - row_padding))
-                             .style("fill", colorInactive)
-                             .style("stroke", "white")
-                             .attr("active", false)
-                             .style({opacity: '1'})
-                             .on('click', function(d){
-                                 
-                                 var nextColor = this.style.fill == colorInactive ?
-                                     colorActive : colorInactive
-                                 
-                                 var nodeSelection = d3.select(this)
-                                                       .style("fill", nextColor)
-                                 var text_x = Number(nodeSelection.attr("x")) + 
-                                         0.5 * cell_width;
-                                 var text_y = Number(nodeSelection.attr("y")) + 
-                                         0.5 * cell_height;                                
-
-                                 if(nextColor == colorInactive) {
-                                     d3.select(this.parentNode).select("text").remove()
-                                     var d = d3.select(this.parentNode).datum();
-                                     d["active"] = false;
-                                     d3.select(this.parentNode).__data__ = d;
-
-                                 } else {
-                                     var d = d3.select(this.parentNode).datum();
-                                     d["active"] = true;
-                                     d3.select(this.parentNode).__data__ = d;
-                                     
-                                     var score = d["score"];
-                                     var trace = d["trace"];
-                                     
-                                     parentNode = d3.select(this.parentNode)
-                                     .append("text")
-                                     .text(score)
-                                     .attr("x", text_x)
-                                     .attr("y", text_y)
-                                     .style("text-anchor", "middle")
-                                 }
-                                 
-                             })
-                            .on('mouseover', function(d) {
-                                d3.select(this).style("stroke", "grey") 
-                                               .style("stroke-width", 2)
-                            })
-                            .on('mouseout', function(d) {
-                                d3.select(this).style("stroke", "white")
-                                               .style("stroke-width", 1)
-                            });
-
-                        // Draw the column and row names
-                         
-
-                        var row_names = svg.selectAll("text.row")
-                                           .data(sequence_1)
-                                           .enter()
-                                           .append("text");
-                         
-                        row_names.text(function(d) {return d;})
-                                 .attr("y", function(d, i) { 
-                                     var out = top_margin + i * cell_height +
-                                         row_padding + 0.5 * cell_height;
-                                     return out; 
-                                 })
-                                 .attr("x", 0.5 * left_margin);
+                      
+   
+                
+                //Draw rectangles
+                svg.selectAll("g")
+                   .append("rect") 
+                   .attr("x", function(d, i) {return get_coord(i, "x");})
+                   .attr("y", function(d, i) {return get_coord(i, "y");})
+                   .attr("width", (cell_width - col_padding))
+                   .attr("height", (cell_height - row_padding))
+                   .style("fill", colorInactive)
+                   .style("stroke", "white")
+                   .attr("active", false)
+                   .style({opacity: '0.5'})                             
+                   .on('mouseover', function(d) {
+                       d3.select(this).style("stroke", "grey") 
+                                      .style("stroke-width", 2)
+                   })
+                   .on('mouseout', function(d) {
+                       d3.select(this).style("stroke", "white")
+                                      .style("stroke-width", 1)
+                   });
 
 
-                        var col_names = svg.selectAll("text.col")
-                                           .data(sequence_2)
-                                           .enter()
-                                           .append("text");
-                         
-                        col_names.text(function(d) {return d;})
-                                 .attr("x", function(d, i) { 
-                                     var out = left_margin + i * cell_width +
-                                         col_padding + 0.5 * cell_width;
-                                     return out; 
-                                 })
-                                 .attr("y", 0.5 * top_margin);
+                // Draw the column and row names
+                var row_names = svg.selectAll("text.row")
+                                   .data(sequence_1)
+                                   .enter()
+                                   .append("text");
+                 
+                row_names.text(function(d) {return d;})
+                         .attr("y", function(d, i) { 
+                             var out = top_margin + i * cell_height +
+                                 row_padding + 0.5 * cell_height;
+                             return out; 
+                         })
+                         .attr("x", 0.5 * left_margin);
 
-                        
-                        //// Display the alignment
-                         
+                var col_names = svg.selectAll("text.col")
+                                   .data(sequence_2)
+                                   .enter()
+                                   .append("text");
+                 
+                col_names.text(function(d) {return d;})
+                         .attr("x", function(d, i) { 
+                             var out = left_margin + i * cell_width +
+                                 col_padding + 0.5 * cell_width;
+                             return out; 
+                         })
+                         .attr("y", 0.5 * top_margin);
 
-                        }
-			
 
-		</script>
-	</body>
+
+                
+                //// Display the alignment
+                 
+    
+                }
+
+        //.on('click', function(d){
+        //                 
+        //                 var nextColor = this.style.fill == colorInactive ?
+        //                     colorActive : colorInactive
+        //                 
+        //                 var nodeSelection = d3.select(this)
+        //                                       .style("fill", nextColor)
+        //                 var text_x = Number(nodeSelection.attr("x")) + 
+        //                         0.5 * cell_width;
+        //                 var text_y = Number(nodeSelection.attr("y")) + 
+        //                         0.5 * cell_height;                                
+
+        //                 if(nextColor == colorInactive) {
+        //                     d3.select(this.parentNode).select("text").remove()
+        //                     var d = d3.select(this.parentNode).datum();
+        //                     d["active"] = false;
+        //                     d3.select(this.parentNode).__data__ = d;
+
+        //                 } else {
+        //                     var d = d3.select(this.parentNode).datum();
+        //                     d["active"] = true;
+        //                     d3.select(this.parentNode).__data__ = d;
+        //                     
+        //                     var score = d["score"];
+        //                     var trace = d["trace"];
+        //                     
+        //                     parentNode = d3.select(this.parentNode)
+        //                     .append("text")
+        //                     .text(score)
+        //                     .attr("x", text_x)
+        //                     .attr("y", text_y)
+        //                     .style("text-anchor", "middle")
+        //                 }
+        //                 
+        //             })	
+
+        </script>
+    </body>
 </html>
 
