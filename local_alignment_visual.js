@@ -127,7 +127,7 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
     var svg = d3.select("body")
                 .append("svg")
                 .attr("width", w)
-                .attr("height", h);
+                .attr("height", h)
 
     //Draw trace lines
     svg.selectAll("g")
@@ -188,7 +188,15 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
         .attr("font-family", "Arial")
         .style("fill", "grey");
 
-          
+    
+    var visualizeTrace = function(index) {
+        id_ = '#cell_' + index;
+        svg.select(id_)
+           .transition()
+           .delay(index * 10)
+           .style("fill", "lightblue")
+           .style("opacity", 0.5);
+    }
 
     
     //Draw rectangles
@@ -201,6 +209,7 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
        .style("fill", colorInactive)
        .style("stroke", "white")
        .attr("active", false)
+       .attr("id", function(d, i) { return "cell_" + i })
        .style("opacity", function(d) {
            var s = d['score'];
            return (((s / max_score) + 0.1) * 0.8);
@@ -214,36 +223,79 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
                           .style("stroke-width", 1)
        })
        .on('click', function(d, i) {
+          
+            
+          // Reset all old values
+          svg.selectAll("rect")
+              .style("fill", colorInactive)
+              .style("opacity", function(d) {
+                  var s = d['score'];
+                  return (((s / max_score) + 0.1) * 0.8);
+              })
 
-          d3.select("#rowAlignment").remove();
-          d3.select("#colAlignment").remove();
-          d = d3.select(this.parentNode).datum()
-          if(d['active'] == false){
-              d3.select(this).style("opacity", 0.8);
-              d['active'] = true;
-              d3.select(this.parentNode).__data__ = d;
-              rowElement = Math.floor((d['counter'] / ncol));
-              colElement = d['counter'] % ncol;
-              if(rowElement == colElement) {
-                  rowAlignment.push(sequence_1[rowElement]);
-                  colAlignment.push(sequence_2[colElement]);
+          // Get row and col number
+          var col = i % ncol;
+          var row = Math.floor((i / ncol));  
+
+          // Get the trace 
+          var trace = [i];
+
+          while (true) {
+              
+              var step = trace_mat[row][col];
+
+              // get the index value of the next cell
+              if (step == 0) {
+                  i = i - (ncol + 1);
+              } else if(step == 1) {
+                  i = i - ncol;
+              } else if(step == 2) {
+                  i = i - 1;
+              } else if(step == 0 || score_mat[row][col] == 0) {
+                  break;
               }
-          } else {
-              d3.select(this).style("opacity", 0.5);
-              d['active'] = false;
-              d3.select(this.parentNode).__data__ = d;
+              col = i % ncol;
+              row = Math.floor((i / ncol));  
+              trace.push(i);
           }
-            //// Display the alignment
-            //Row alignment
-            d3.select("body")
-              .append("p")
-              .attr("id", "rowAlignment")
-              .text(rowAlignment.join(" "));
-            //Column alignment
-            d3.select("body")
-              .append("p")
-              .attr("id", "colAlignment")
-              .text(colAlignment.join(" "));
+          trace.pop();
+
+          // Transition the cells to new color
+          for(j = 0; j < (trace.length - 1); ++j) {
+                visualizeTrace(trace[j]);
+          }
+
+          // Display the alignments
+
+          //d3.select("#rowAlignment").remove();
+          //d3.select("#colAlignment").remove();
+          //d = d3.select(this.parentNode).datum()
+          //if(d['active'] == false){
+          //    d3.select(this).style("opacity", 0.8);
+          //    d['active'] = true;
+          //    d3.select(this.parentNode).__data__ = d;
+          //    rowElement = Math.floor((d['counter'] / ncol));
+          //    colElement = d['counter'] % ncol;
+          //    if(rowElement == colElement) {
+          //        rowAlignment.push(sequence_1[rowElement]);
+          //        colAlignment.push(sequence_2[colElement]);
+          //    }
+          //} else {
+          //    d3.select(this).style("opacity", 0.5);
+          //    d['active'] = false;
+          //    d3.select(this.parentNode).__data__ = d;
+          //}
+          //  //// Display the alignment
+          //  //Row alignment
+          //  d3.select("body")
+          //    .append("p")
+          //    .attr("id", "rowAlignment")
+          //    .text(rowAlignment.join(" "));
+          //  //Column alignment
+          //  d3.select("body")
+          //    .append("p")
+          //    .attr("id", "colAlignment")
+          //    .text(colAlignment.join(" "));
 
           
        });
@@ -265,8 +317,11 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
                  return out; 
              })
              .attr("x", 0)
-             .style("text-anchor", "right");
-
+             .attr("id", function(d, i) { return "row_" + i; })
+             .style("text-anchor", "right")
+             .style("fill", "grey")
+             .attr("font-family", "Arial");
+                 
     var col_names = svg.selectAll("text.col")
                        .data(sequence_2)
                        .enter()
@@ -280,8 +335,11 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
                  return out; 
              })
              .attr("y", 0)
+             .attr("id", function(d, i) { return "col_" + i; })
              .style("text-anchor", "left")
-             .style("writing-mode", "vertical-rl");
+             .style("writing-mode", "vertical-rl")  
+             .style("fill", "grey")
+             .attr("font-family", "Arial");
 
 }
 
