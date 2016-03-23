@@ -16,17 +16,12 @@ function handleFormSubmission(event){
     return false;
 }
 
-//Variables outside of draw() scope to store selected alignment for
-//display
-var rowAlignment = [];
-var colAlignment = []; 
-
 
 // Calculate alignment matrix and draw it 
 function draw(seq_1, seq_2, match, misMatch, gap) {
 
     // Remove previous visuals
-    d3.select("svg").remove();
+    d3.selectAll("svg").remove();
 
     // Process input sequences
     var sequence_1 = seq_1.split(" ");
@@ -40,7 +35,40 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
     var nrow = sequence_1.length;
     var ncol = sequence_2.length;
 
-    //Width and height (dynamic depending on length of each sequence)
+    // Determine font size. If  
+    var fontSize = 12;
+    
+    // Measure text width
+    var allText = sequence_1.concat(sequence_2);
+    var testSvg = d3.select("body").append("svg").attr("id", "textTest")
+
+    var text = testSvg.selectAll("g")
+                 .data(allText)
+                 .enter()
+                 .append("g")
+                 .attr("id", "test")
+                 .append("text")
+                 .text(function(d) { return d;})
+                 .attr("font-size", fontSize)
+                 .style("font-family", font);
+
+    var maxWidth = 0;
+    var maxHeight = 0;
+    text.each(function() {
+        var width = this.getBBox().width;
+        var height = this.getBBox().height;
+        if(width > maxWidth) {
+            maxWidth = width;
+        }
+        if(height > maxHeight) {
+            maxHeight = height;
+        }
+    });
+
+    d3.select("#textTest").remove()
+    
+    var maxFontSize = 12;
+    //Width and height of the matrix (dynamic depending on length of each sequence)
     var size = 600;
     if(nrow == ncol) { 
         var w = size;
@@ -52,17 +80,9 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
         var w = size;
         var h = size * nrow / ncol;
     }
-       
-    //Get the size of each sequence element 
-    var l_1 = sequence_1.map(function(e) {return e.length;}); 
-    var l_2 = sequence_2.map(function(e) {return e.length;});
       
-    // Adapt left and top margin to fit all sequence elements as row and column
-    // names
-    var l_1_max = Math.max.apply(null, l_1);
-    var l_2_max = Math.max.apply(null, l_2);
-    var left_margin = 0.05 * w + (0.01 * w * (l_1_max - 1));
-    var top_margin = 0.05 * h + (0.01 * h * (l_2_max - 1));
+    var left_margin = 1.1 * maxWidth;
+    var top_margin = 1.1 * maxWidth;
     
     // Padding between matix cells (as proporiton of total width/height)
     var padding = 0.05;
@@ -75,17 +95,19 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
     var cell_height = (h - top_margin) / nrow;
     var colorInactive = "orange";
 
-    var fontSize = 0.3 * cell_width
+    // Size of different fonts
+        var font = "Arial";
+    var maxSize = 0;
 
-   
+    
     //==============================================
 
     // Calculate the matrix. Imported from local_alignment.js
-    var res = popMat(sequence_1, sequence_2, match, misMatch,
-            gap);
+    var res = popMat(sequence_1, sequence_2, match, misMatch, gap);
     var score_mat = res[0];
     var trace_mat = res[1];
-    
+     
+
     var data = new Array();
     var c = 0;
     var max_score = 0;
@@ -123,84 +145,97 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
         return returnValue;
     } 
 
-    //Create SVG matrix element
-    var svg = d3.select("body")
-                .append("svg")
-                .attr("width", w)
-                .attr("height", h)
 
+    //Create SVG matrix element                           
+    var scoreMatrix = d3.select("body").append("svg")
+                                       .attr("width", w)
+                                       .attr("height", h); 
+
+    var alignSvg = d3.select("body").append("svg")
+                                     .attr("width", 0.5 * w)
+                                     .attr("height", h)
+                                     .attr("id", "align_svg")
     //Draw trace lines
-    svg.selectAll("g")
-       .data(data)
-       .enter()
-       .append("g")
-       .append("line")
-       .attr("x1", function(d, i){ 
-           if(d['trace'] == 1) {
-               return get_coord(i, "x") + 0.4 * cell_width;
-           } else {
-               return get_coord(i, "x");
-           }
-       })
-       .attr("y1", function(d, i){ 
-           if(d['trace'] == 2) {
-               return get_coord(i, "y") + 0.4 * cell_width;
-           } else {
-               return get_coord(i, "y");
-           }
-       })
-       .attr("x2", function(d, i){ 
-           var out = get_coord(i, "x") + 0.4 * cell_width; 
-           return out;
-       })
-       .attr("y2", function(d, i){
-           out = get_coord(i, "y") + 0.4 * cell_height;
-           return out;
-       })
-       .attr("stroke-width", 1)
-       .attr("stroke", function(d, i){
-           //Don't draw a trace line if the score is zero or the choice was zero
-           if(d['trace'] == 3 || d['score'] == 0) {
-               return "none"; 
-           } else {
-               return "grey";
-           }
-            
-       });
+    scoreMatrix.selectAll("g")
+               .data(data)
+               .enter()
+               .append("g")
+               .append("line")
+               .attr("x1", function(d, i){ 
+                   if(d['trace'] == 1) {
+                       return get_coord(i, "x") + 0.4 * cell_width;
+                   } else {
+                       return get_coord(i, "x");
+                   }
+               })
+               .attr("y1", function(d, i){ 
+                   if(d['trace'] == 2) {
+                       return get_coord(i, "y") + 0.4 * cell_width;
+                   } else {
+                       return get_coord(i, "y");
+                   }
+               })
+               .attr("x2", function(d, i){ 
+                   var out = get_coord(i, "x") + 0.4 * cell_width; 
+                   return out;
+               })
+               .attr("y2", function(d, i){
+                   out = get_coord(i, "y") + 0.4 * cell_height;
+                   return out;
+               })
+               .attr("stroke-width", 1)
+               .attr("stroke", function(d, i){
+                   //Don't draw a trace line if the score is zero or the choice was zero
+                   if(d['trace'] == 3 || d['score'] == 0) {
+                       return "none"; 
+                   } else {
+                       return "grey";
+                   }
+                    
+               });
 
 
     //Draw the scores
-    svg.selectAll("g")
-        .append("text")
-        .text(function(d, i) {return d["score"];})
-        .attr("x", function(d, i) {
-            var out = get_coord(i, "x") + 0.5 * 
-                cell_width - 0.1 * fontSize;
-            return out;
-        })
-        .attr("y", function(d, i) {
-            var out = get_coord(i, "y") + 0.5 *
-                cell_height + 0.2 * fontSize;
-            return out;
-        })
-        .style("text-anchor", "middle")
-        .style("font-size", fontSize)
-        .attr("font-family", "Arial")
-        .style("fill", "grey");
+    scoreMatrix.selectAll("g")
+               .append("text")
+               .text(function(d, i) {return d["score"];})
+               .attr("x", function(d, i) {
+                   var out = get_coord(i, "x") + 0.5 * 
+                       cell_width - 0.1 * fontSize;
+                   return out;
+               })
+               .attr("y", function(d, i) {
+                   var out = get_coord(i, "y") + 0.5 *
+                       cell_height + 0.2 * fontSize;
+                   return out;
+               })
+               .style("text-anchor", "middle")
+               .style("font-size", 0.3 * cell_width)
+               .attr("font-family", "Arial")
+               .style("fill", "grey");
 
     
-    var visualizeTrace = function(index) {
+    var visualizeTrace = function(index, counter) {
         id_ = '#cell_' + index;
-        svg.select(id_)
+        scoreMatrix.select(id_)
+                   .transition()
+                   .delay(counter * 100)
+                   .duration(2000)
+                   .style("fill", "lightblue");
+    }
+
+    var visualizeElem = function(counter) {
+        id_ = '#align_element_' + counter;
+        d3.selectAll(id_).selectAll("text")
            .transition()
-           .delay(index * 10)
-           .style("fill", "lightblue")
-           .style("opacity", 0.5);
+           .delay(counter * 100)
+           .duration(2000)
+           .style("opacity", 1);
     }
 
     
     //Draw rectangles
-    svg.selectAll("g")
+    scoreMatrix.selectAll("g")
        .append("rect") 
        .attr("x", function(d, i) {return get_coord(i, "x");})
        .attr("y", function(d, i) {return get_coord(i, "y");})
@@ -226,7 +261,7 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
           
             
           // Reset all old values
-          svg.selectAll("rect")
+          scoreMatrix.selectAll("rect")
               .style("fill", colorInactive)
               .style("opacity", function(d) {
                   var s = d['score'];
@@ -239,72 +274,122 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
 
           // Get the trace 
           var trace = [i];
+          var col_align = [];
+          var row_align = [];
 
           while (true) {
               
               var step = trace_mat[row][col];
 
-              // get the index value of the next cell
-              if (step == 0) {
+              if (score_mat[row][col] == 0) {
+                  break;
+              } else if (step == 0) {
                   i = i - (ncol + 1);
+                  var row_res = sequence_1[row];
+                  var col_res = sequence_2[col];
               } else if(step == 1) {
                   i = i - ncol;
+                  var col_res = "-";
+                  var row_res = sequence_1[row];
               } else if(step == 2) {
                   i = i - 1;
-              } else if(step == 0 || score_mat[row][col] == 0) {
+                  var col_res = sequence_2[col];
+                  var row_res = "-"
+              } else if(step == 0) {
                   break;
               }
               col = i % ncol;
               row = Math.floor((i / ncol));  
               trace.push(i);
+              col_align.push(col_res);
+              row_align.push(row_res);
           }
           trace.pop();
+          // Reverse it to start at beginning
+          trace.reverse()
+          col_align.reverse()
+          row_align.reverse()
+                  
+ 
+         d3.selectAll("#row_element_container").remove()
+         d3.selectAll("#col_element_container").remove()
+         d3.select("#resultTitle").remove()
+
+         d3.select("#align_svg").append("g")
+                  .attr("id", "resultTitle")
+                  .append("text")
+                  .text("Alignment Result")
+                  .attr("x", 5 * col_padding)
+                  .attr("y", maxHeight)
+                  .attr("fill", "grey")
+                  .attr("font-family", "Arial")
+                  .attr("font-size", Math.min(0.3 * cell_height, maxFontSize))
+
+         d3.select("#align_svg").append("g")
+                  .attr("id", "row_element_container")
+                  .selectAll("g.row")
+                  .data(row_align)
+                  .enter()
+                  .append("g")
+                  .attr("id", function(d, i) {return "align_element_" + i;})
+                  .append("text")
+                  .attr("font-size", Math.min(maxFontSize, 0.3 * cell_height))
+                  .attr("x", 5 * col_padding)
+                  .attr("y", function(d, i) { 
+                      return top_margin + 0.5 * cell_height + i * cell_height + row_padding;
+                              })
+                  .text(function(d, i) { return d })
+                  .attr("opacity", 0)
+                  .attr("fill", function(d, i) {
+                      if(col_align[i] == d | d == '-') {
+                          return "grey";
+                      } else if(col_align[i] == '-') {
+                          return "orange";
+                      } else {
+                          return "red";
+                      }
+                  })
+                  .attr("font-family", "sans-serif");
+
+         d3.select("#align_svg").append("g")
+                  .attr("id", "col_element_container")
+                  .selectAll("g.col")
+                  .data(col_align)
+                  .enter()
+                  .append("g")
+                  .attr("id", function(d, i) {return "align_element_" + i;})
+                  .append("text")
+                  .attr("font-size", Math.min(maxFontSize, 0.3 * cell_height))
+                  .attr("x", 5 * col_padding + 1.2 * maxWidth)
+                  .attr("y", function(d, i) { 
+                      return top_margin + 0.5 * cell_height + i * cell_height + row_padding;
+                              })
+                  .text(function(d, i) { return d })
+                  .attr("opacity", 0)
+                  .attr("fill", function(d, i) {
+                      if(row_align[i] == d | d == '-') {
+                          return "grey";
+                      } else if(row_align[i] == '-') {
+                          return "orange";
+                      } else {
+                          return "red";
+                      }
+                  })
+                  .attr("font-family", "sans-serif");
+
 
           // Transition the cells to new color
-          for(j = 0; j < (trace.length - 1); ++j) {
-                visualizeTrace(trace[j]);
-          }
-
-          // Display the alignments
-
-          //d3.select("#rowAlignment").remove();
-          //d3.select("#colAlignment").remove();
-          //d = d3.select(this.parentNode).datum()
-          //if(d['active'] == false){
-          //    d3.select(this).style("opacity", 0.8);
-          //    d['active'] = true;
-          //    d3.select(this.parentNode).__data__ = d;
-          //    rowElement = Math.floor((d['counter'] / ncol));
-          //    colElement = d['counter'] % ncol;
-          //    if(rowElement == colElement) {
-          //        rowAlignment.push(sequence_1[rowElement]);
-          //        colAlignment.push(sequence_2[colElement]);
-          //    }
-          //} else {
-          //    d3.select(this).style("opacity", 0.5);
-          //    d['active'] = false;
-          //    d3.select(this.parentNode).__data__ = d;
-          //}
-          //  //// Display the alignment
-          //  //Row alignment
-          //  d3.select("body")
-          //    .append("p")
-          //    .attr("id", "rowAlignment")
-          //    .text(rowAlignment.join(" "));
-          //  //Column alignment
-          //  d3.select("body")
-          //    .append("p")
-          //    .attr("id", "colAlignment")
-          //    .text(colAlignment.join(" "));
-
-          
+          for(j = 0; j < trace.length; ++j) { 
+                visualizeTrace(trace[j], j);
+                visualizeElem(j);
+          }          
+ 
+               
        });
 
-
-
-
     // Draw the column and row names
-    var row_names = svg.selectAll("text.row")
+
+    var row_names = scoreMatrix.selectAll("text.row")
                        .data(sequence_1)
                        .enter()
                        .append("g")
@@ -312,17 +397,17 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
      
     row_names.text(function(d) {return d;})
              .attr("y", function(d, i) { 
-                 var out = top_margin + i * cell_height +
-                     row_padding + 0.5 * cell_height;
+                 var out = top_margin + 0.5 * cell_height + i * cell_height + row_padding;
                  return out; 
              })
              .attr("x", 0)
              .attr("id", function(d, i) { return "row_" + i; })
              .style("text-anchor", "right")
              .style("fill", "grey")
-             .attr("font-family", "Arial");
+             .attr("font-family", "Arial")
+             .style("font-size", Math.min(0.3 * cell_height, maxFontSize));
                  
-    var col_names = svg.selectAll("text.col")
+    var col_names = scoreMatrix.selectAll("text.col")
                        .data(sequence_2)
                        .enter()
                        .append("g") 
@@ -339,7 +424,8 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
              .style("text-anchor", "left")
              .style("writing-mode", "vertical-rl")  
              .style("fill", "grey")
-             .attr("font-family", "Arial");
+             .attr("font-family", "Arial")
+             .style("font-size", Math.min(0.3 * cell_height, maxFontSize));
 
 }
 
