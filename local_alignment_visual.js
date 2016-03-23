@@ -69,7 +69,11 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
     
     var maxFontSize = 12;
     //Width and height of the matrix (dynamic depending on length of each sequence)
-    var size = 600;
+
+    var bw = Math.max(document.documentElement.clientWidth, window.innerWidth || 0)
+    var bh = Math.max(document.documentElement.clientHeight, window.innerHeight || 0)
+
+    var size = 0.95 * Math.min(bw, bh);
     if(nrow == ncol) { 
         var w = size;
         var h = size;
