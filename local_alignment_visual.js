@@ -40,8 +40,8 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
     
     // Measure text width
     var allText = sequence_1.concat(sequence_2);
-    var testSvg = d3.select("body").append("svg").attr("id", "textTest")
-
+    var testSvg = d3.select("body").append("svg").attr("id", "textTest");
+     
     var text = testSvg.selectAll("g")
                  .data(allText)
                  .enter()
@@ -68,12 +68,13 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
     d3.select("#textTest").remove()
     
     var maxFontSize = 12;
-    //Width and height of the matrix (dynamic depending on length of each sequence)
-
-    var bw = Math.max(document.documentElement.clientWidth, window.innerWidth || 0)
-    var bh = Math.max(document.documentElement.clientHeight, window.innerHeight || 0)
-
-    var size = 0.95 * Math.min(bw, bh);
+    //var bw = Math.max(document.documentElement.clientWidth, window.innerWidth || 0)
+    //var bh = Math.max(document.documentElement.clientHeight, window.innerHeight || 0)
+    //bw = document.getElementById('#laFrame');
+    var containerWidth = parseFloat(d3.select('#laFrame').style("width"));
+   
+    visualWidth = 0.8 * containerWidth;
+    size = 0.8 * visualWidth;
     if(nrow == ncol) { 
         var w = size;
         var h = size;
@@ -84,7 +85,7 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
         var w = size;
         var h = size * nrow / ncol;
     }
-      
+
     var left_margin = 1.1 * maxWidth;
     var top_margin = 1.1 * maxWidth;
     
@@ -100,10 +101,9 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
     var colorInactive = "orange";
 
     // Size of different fonts
-        var font = "Arial";
+    var font = "Arial";
     var maxSize = 0;
-
-    
+ 
     //==============================================
 
     // Calculate the matrix. Imported from local_alignment.js
@@ -151,12 +151,12 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
 
 
     //Create SVG matrix element                           
-    var scoreMatrix = d3.select("body").append("svg")
-                                       .attr("width", w)
-                                       .attr("height", h); 
+    var scoreMatrix = d3.select("#laFrame").append("svg")
+                                           .attr("width", w)
+                                           .attr("height", h); 
 
-    var alignSvg = d3.select("body").append("svg")
-                                     .attr("width", 0.5 * w)
+    var alignSvg = d3.select("#laFrame").append("svg")
+                                     .attr("width", visualWidth - w)
                                      .attr("height", h)
                                      .attr("id", "align_svg")
     //Draw trace lines
@@ -346,7 +346,7 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
                   .attr("opacity", 0)
                   .attr("fill", function(d, i) {
                       if(col_align[i] == d | d == '-') {
-                          return "grey";
+                          return "green";
                       } else if(col_align[i] == '-') {
                           return "orange";
                       } else {
@@ -372,7 +372,7 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
                   .attr("opacity", 0)
                   .attr("fill", function(d, i) {
                       if(row_align[i] == d | d == '-') {
-                          return "grey";
+                          return "green";
                       } else if(row_align[i] == '-') {
                           return "orange";
                       } else {
