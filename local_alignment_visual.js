@@ -1,3 +1,4 @@
+
 //Function to handle the form submission and 
 //redraw the matrix 
 function handleFormSubmission(event){
@@ -17,8 +18,140 @@ function handleFormSubmission(event){
 }
 
 
-// Calculate alignment matrix and draw it 
+
+
+
+/* Main visualization calculate alignment matrix and draw it 
+------------------------------------------------------------------------------*/
+
 function draw(seq_1, seq_2, match, misMatch, gap) {
+
+    /* Utility Functions
+    --------------------------------------------------------------------------*/
+
+    // Get the coordinates of the upper left corner of a cell from the cell index. 
+    // Sequentially indexed row by row
+    function get_coord(i, coord) {
+        var col = i % ncol;
+        var row = Math.floor((i / ncol));  
+        if(coord == "x") {
+            var returnValue = col * cell_width + col_padding + left_margin;
+        } else if(coord == "y") { 
+            var returnValue = row * cell_height + row_padding + top_margin; }
+        return returnValue;
+    } 
+
+    // Get the endpoint of a trace line depending on the trace
+    function get_trace(d, i, coord, k){
+       if(d['trace'] == k) {
+           return get_coord(i, coord) + 0.4 * cell_width;
+       } else {
+           return get_coord(i, coord);
+       } 
+    }
+
+
+    // Functions to draw arrow heads
+    //
+
+    // Rotate a 2D vector
+    function rotate(cx, cy, x, y, angle) {
+        var cx = parseFloat(cx);
+        var cy = parseFloat(cy);
+        var x = parseFloat(x);
+        var y = parseFloat(y);
+        var radians = (Math.PI / 180) * angle,
+            cos = Math.cos(radians),
+            sin = Math.sin(radians),
+            nx = (cos * (x - cx)) - (sin * (y - cy)) + cx,
+            ny = (cos * (y - cy)) + (sin * (x - cx)) + cy;
+        return [nx, ny];
+    }
+
+    // Draw one side of an arrow head
+    function arrowHead(side) {
+        if(side == "right") {
+            var rotationAngle = -30;
+        }
+        else if(side == "left") {
+            var rotationAngle = 30;
+        }
+        scoreMatrix.selectAll("g")
+            .append("line")
+            .attr("x1", function(d, i){ return get_trace(d, i, "x", 1);})
+            .attr("y1", function(d, i){ return get_trace(d, i, "y", 2);}) 
+            .attr("x2", function(d, i){ 
+                var stem_x1 = get_trace(d, i, "x", 1);
+                var stem_y1 = get_trace(d, i, "y", 2);
+                if(d['trace'] == 0) {   //diagonal     
+                    var stem_x2 = get_coord(i, "x") + 0.1 * cell_width;
+                    var stem_y2 = get_coord(i, "y") + 0.1 * cell_height;  
+                } else if(d['trace'] == 1) { //up
+                    var stem_x2 = get_coord(i, "x") + 0.4 * cell_width;
+                    var stem_y2 = get_coord(i, "y") + 0.1 * cell_height;   
+                } else if(d['trace'] == 2) { //left
+                    var stem_x2 = get_coord(i, "x") + 0.1 * cell_width;
+                    var stem_y2 = get_coord(i, "y") + 0.4 * cell_height;   
+                } else {
+                    return(0)
+                }
+                var end = rotate(stem_x1, stem_y1, stem_x2, stem_y2, rotationAngle);
+                return end[0];
+            })
+            .attr("y2", function(d, i){
+                var stem_x1 = get_trace(d, i, "x", 1);
+                var stem_y1 = get_trace(d, i, "y", 2);
+                if(d['trace'] == 0) {   //diagonal     
+                    var stem_x2 = get_coord(i, "x") + 0.1 * cell_width;
+                    var stem_y2 = get_coord(i, "y") + 0.1 * cell_height;  
+                } else if(d['trace'] == 1) { //up
+                    var stem_x2 = get_coord(i, "x") + 0.4 * cell_width;
+                    var stem_y2 = get_coord(i, "y") + 0.1 * cell_height;   
+                } else if(d['trace'] == 2) { //left
+                    var stem_x2 = get_coord(i, "x") + 0.1 * cell_width;
+                    var stem_y2 = get_coord(i, "y") + 0.4 * cell_height;   
+                } else {
+                    return(0)
+                }
+                var end = rotate(stem_x1, stem_y1, stem_x2, stem_y2, rotationAngle);
+                return end[1]; 
+            })
+            .attr("stroke-width", 1)
+            .attr("stroke", function(d, i){
+                //Don't draw a trace line if the score is zero or the choice was zero
+                if(d['trace'] == 3 || d['score'] == 0) {
+                    return "none"; 
+                } else {
+                    return "grey";
+                }
+                 
+            });   
+        }
+
+
+    // Change appearnace of one cell to visualize the trace through the matrix 
+    // after click
+    function visualizeTrace(index, counter) {
+        id_ = '#cell_' + index;
+        scoreMatrix.select(id_)
+                   .transition()
+                   .delay(counter * 100)
+                   .duration(2000)
+                   .style("fill", "lightblue");
+    }
+
+    // Make alignment element visible to visualize the selected alignment
+    function visualizeElem(counter) {
+        id_ = '#align_element_' + counter;
+        d3.selectAll(id_).selectAll("text")
+           .transition()
+           .delay(counter * 100)
+           .duration(2000)
+           .style("opacity", 1);
+    }
+
+    /* This is where the drawing begins 
+    --------------------------------------------------------------------------*/
 
     // Remove previous visuals
     d3.selectAll("svg").remove();
@@ -73,8 +206,8 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
     //bw = document.getElementById('#laFrame');
     var containerWidth = parseFloat(d3.select('#laFrame').style("width"));
    
-    visualWidth = 0.8 * containerWidth;
-    size = 0.8 * visualWidth;
+    var visualWidth = 0.8 * containerWidth;
+    var size = 0.8 * visualWidth;
     if(nrow == ncol) { 
         var w = size;
         var h = size;
@@ -134,21 +267,6 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
         }
     }
     
-   var get_coord = function(i, coord) {
-        // Function to get the x and y positions from the cell index (running number
-        // of cells, cells are counted row-wise 
-        col = i % ncol;
-        row = Math.floor((i / ncol));  
-        if(coord == "x") {
-            returnValue = col * cell_width + col_padding + 
-                left_margin;
-        } else if(coord == "y") { 
-            returnValue = row * cell_height + row_padding +
-                top_margin; }
-
-        return returnValue;
-    } 
-
 
     //Create SVG matrix element                           
     var scoreMatrix = d3.select("#laFrame").append("svg")
@@ -159,26 +277,15 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
                                      .attr("width", visualWidth - w)
                                      .attr("height", h)
                                      .attr("id", "align_svg")
-    //Draw trace lines
+
+    //Draw trace line
     scoreMatrix.selectAll("g")
                .data(data)
                .enter()
                .append("g")
                .append("line")
-               .attr("x1", function(d, i){ 
-                   if(d['trace'] == 1) {
-                       return get_coord(i, "x") + 0.4 * cell_width;
-                   } else {
-                       return get_coord(i, "x");
-                   }
-               })
-               .attr("y1", function(d, i){ 
-                   if(d['trace'] == 2) {
-                       return get_coord(i, "y") + 0.4 * cell_width;
-                   } else {
-                       return get_coord(i, "y");
-                   }
-               })
+               .attr("x1", function(d, i){ return get_trace(d, i, "x", 1);})
+               .attr("y1", function(d, i){ return get_trace(d, i, "y", 2);}) 
                .attr("x2", function(d, i){ 
                    var out = get_coord(i, "x") + 0.4 * cell_width; 
                    return out;
@@ -198,46 +305,32 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
                     
                });
 
+    //Draw Arrow heads right
+    arrowHead("right");
+
+    //Draw Arrow heads left
+    arrowHead("left");
 
     //Draw the scores
     scoreMatrix.selectAll("g")
-               .append("text")
-               .text(function(d, i) {return d["score"];})
-               .attr("x", function(d, i) {
-                   var out = get_coord(i, "x") + 0.5 * 
-                       cell_width - 0.1 * fontSize;
-                   return out;
-               })
-               .attr("y", function(d, i) {
-                   var out = get_coord(i, "y") + 0.5 *
-                       cell_height + 0.2 * fontSize;
-                   return out;
-               })
-               .style("text-anchor", "middle")
-               .style("font-size", 0.3 * cell_width)
-               .attr("font-family", "Arial")
-               .style("fill", "grey");
+       .append("text")
+       .text(function(d, i) {return d["score"];})
+       .attr("x", function(d, i) {
+           var out = get_coord(i, "x") + 0.5 * 
+               cell_width - 0.1 * fontSize;
+           return out;
+       })
+       .attr("y", function(d, i) {
+           var out = get_coord(i, "y") + 0.5 *
+               cell_height + 0.2 * fontSize;
+           return out;
+       })
+       .style("text-anchor", "middle")
+       .style("font-size", 0.3 * cell_width)
+       .attr("font-family", "Arial")
+       .style("fill", "grey");
 
-    
-    var visualizeTrace = function(index, counter) {
-        id_ = '#cell_' + index;
-        scoreMatrix.select(id_)
-                   .transition()
-                   .delay(counter * 100)
-                   .duration(2000)
-                   .style("fill", "lightblue");
-    }
 
-    var visualizeElem = function(counter) {
-        id_ = '#align_element_' + counter;
-        d3.selectAll(id_).selectAll("text")
-           .transition()
-           .delay(counter * 100)
-           .duration(2000)
-           .style("opacity", 1);
-    }
-
-    
     //Draw rectangles
     scoreMatrix.selectAll("g")
        .append("rect") 
@@ -329,6 +422,7 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
                   .attr("font-family", "Arial")
                   .attr("font-size", Math.min(0.3 * cell_height, maxFontSize))
 
+         // Result alignment row-sequence elements
          d3.select("#align_svg").append("g")
                   .attr("id", "row_element_container")
                   .selectAll("g.row")
@@ -355,6 +449,7 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
                   })
                   .attr("font-family", "sans-serif");
 
+         // Result alignment column-sequence elements
          d3.select("#align_svg").append("g")
                   .attr("id", "col_element_container")
                   .selectAll("g.col")
@@ -381,8 +476,8 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
                   })
                   .attr("font-family", "sans-serif");
 
-
           // Transition the cells to new color
+          // and make alignments on the right visible
           for(j = 0; j < trace.length; ++j) { 
                 visualizeTrace(trace[j], j);
                 visualizeElem(j);
