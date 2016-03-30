@@ -43,8 +43,16 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
 
     // Get the endpoint of a trace line depending on the trace
     function get_trace(d, i, coord, k){
+       if(coord == "x") {
+           var pad = col_padding;
+           var cs = cell_width;
+       } else {
+           var pad = row_padding;
+           var cs = cell_height;
+       }
+       
        if(d['trace'] == k) {
-           return get_coord(i, coord) + 0.4 * cell_width;
+           return get_coord(i, coord) + pad + 0.5 * (cs - pad);
        } else {
            return get_coord(i, coord);
        } 
@@ -84,14 +92,14 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
                 var stem_x1 = get_trace(d, i, "x", 1);
                 var stem_y1 = get_trace(d, i, "y", 2);
                 if(d['trace'] == 0) {   //diagonal     
-                    var stem_x2 = get_coord(i, "x") + 0.1 * cell_width;
-                    var stem_y2 = get_coord(i, "y") + 0.1 * cell_height;  
+                    var stem_x2 = get_coord(i, "x") + 0.1 * halfCellPadW;
+                    var stem_y2 = get_coord(i, "y") + 0.1 * halfCellPadH;  
                 } else if(d['trace'] == 1) { //up
-                    var stem_x2 = get_coord(i, "x") + 0.4 * cell_width;
-                    var stem_y2 = get_coord(i, "y") + 0.1 * cell_height;   
+                    var stem_x2 = get_coord(i, "x") + halfCellPadW;
+                    var stem_y2 = get_coord(i, "y") + 0.1 * halfCellPadH;   
                 } else if(d['trace'] == 2) { //left
-                    var stem_x2 = get_coord(i, "x") + 0.1 * cell_width;
-                    var stem_y2 = get_coord(i, "y") + 0.4 * cell_height;   
+                    var stem_x2 = get_coord(i, "x") + 0.1 * halfCellPadW;
+                    var stem_y2 = get_coord(i, "y") + halfCellPadH;   
                 } else {
                     return(0)
                 }
@@ -102,14 +110,14 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
                 var stem_x1 = get_trace(d, i, "x", 1);
                 var stem_y1 = get_trace(d, i, "y", 2);
                 if(d['trace'] == 0) {   //diagonal     
-                    var stem_x2 = get_coord(i, "x") + 0.1 * cell_width;
-                    var stem_y2 = get_coord(i, "y") + 0.1 * cell_height;  
+                    var stem_x2 = get_coord(i, "x") + 0.1 * halfCellPadW;
+                    var stem_y2 = get_coord(i, "y") + 0.1 * halfCellPadH;  
                 } else if(d['trace'] == 1) { //up
-                    var stem_x2 = get_coord(i, "x") + 0.4 * cell_width;
-                    var stem_y2 = get_coord(i, "y") + 0.1 * cell_height;   
+                    var stem_x2 = get_coord(i, "x") + halfCellPadW;
+                    var stem_y2 = get_coord(i, "y") + 0.1 * halfCellPadH;   
                 } else if(d['trace'] == 2) { //left
-                    var stem_x2 = get_coord(i, "x") + 0.1 * cell_width;
-                    var stem_y2 = get_coord(i, "y") + 0.4 * cell_height;   
+                    var stem_x2 = get_coord(i, "x") + 0.1 * halfCellPadW;
+                    var stem_y2 = get_coord(i, "y") + halfCellPadH;   
                 } else {
                     return(0)
                 }
@@ -276,7 +284,10 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
     var alignSvg = d3.select("#laFrame").append("svg")
                                      .attr("width", visualWidth - w)
                                      .attr("height", h)
-                                     .attr("id", "align_svg")
+                                     .attr("id", "align_svg");
+
+    var halfCellPadW = col_padding + 0.5 * (cell_width - col_padding);
+    var halfCellPadH = row_padding + 0.5 * (cell_height - row_padding);
 
     //Draw trace line
     scoreMatrix.selectAll("g")
@@ -287,11 +298,27 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
                .attr("x1", function(d, i){ return get_trace(d, i, "x", 1);})
                .attr("y1", function(d, i){ return get_trace(d, i, "y", 2);}) 
                .attr("x2", function(d, i){ 
-                   var out = get_coord(i, "x") + 0.4 * cell_width; 
+                   if(d['trace'] == 0) { 
+                       var out = get_coord(i, "x") + 0.6 * halfCellPadW; 
+                   } else if(d['trace'] == 1) {
+                       var out = get_coord(i, "x") + halfCellPadW; 
+                   } else if(d['trace'] == 2) {
+                       var out = get_coord(i, "x") + 0.6 * halfCellPadW; 
+                   } else {
+                       var out = 0; 
+                   }
                    return out;
                })
                .attr("y2", function(d, i){
-                   out = get_coord(i, "y") + 0.4 * cell_height;
+                   if(d['trace'] == 0) { 
+                       var out = get_coord(i, "y") + 0.6 * halfCellPadW; 
+                   } else if(d['trace'] == 1) {
+                       var out = get_coord(i, "y") + 0.6 * halfCellPadW; 
+                   } else if(d['trace'] == 2) {
+                       var out = get_coord(i, "y") + halfCellPadW; 
+                   } else {
+                       var out = 0; 
+                   }
                    return out;
                })
                .attr("stroke-width", 1)
@@ -316,13 +343,11 @@ function draw(seq_1, seq_2, match, misMatch, gap) {
        .append("text")
        .text(function(d, i) {return d["score"];})
        .attr("x", function(d, i) {
-           var out = get_coord(i, "x") + 0.5 * 
-               cell_width - 0.1 * fontSize;
+           var out = get_coord(i, "x") + halfCellPadW - 0.2 * fontSize;
            return out;
        })
        .attr("y", function(d, i) {
-           var out = get_coord(i, "y") + 0.5 *
-               cell_height + 0.2 * fontSize;
+           var out = get_coord(i, "y") + halfCellPadH + 0.2 * fontSize;
            return out;
        })
        .style("text-anchor", "middle")
