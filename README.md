@@ -19,11 +19,7 @@ for more details on the algorithm.](example.png)
 
 ### How to use it
 
-You can try it out [here]() (link not up yet). 
-
-
-
-
+You can try it out on my [website](http://fridolin-linder.com/2016/03/30/local-alignment.html). 
 
 ### License
 
