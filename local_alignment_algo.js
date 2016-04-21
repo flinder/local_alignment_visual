@@ -54,15 +54,3 @@ var popMat = function(s_1, s_2, match, misMatch, gap) {
     }
     return [score_mat, trace_mat]; 
 }
-
-// Backtrace from selected field
-var backtrace = function(index, score_matrix, trace_matrix) {
-
-}
-
-// Get the optimum alignment
-var getOptimum = function(score_matrix, trace_matrix) {
-
-    //Find maximum score
-        
-}
